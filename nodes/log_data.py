@@ -22,6 +22,10 @@ class LOG_Wrapper():
     
         self.att = np.array([1., 0., 0., 0.])  # Quaternion format: qw, qx, qy, qz
         self.euler = np.zeros((3,))
+        
+        self.att_ref = np.array([1., 0., 0., 0.])  # Quaternion format: qw, qx, qy, qz
+        self.euler_ref = np.zeros((3,))
+        
         self.rate = np.zeros((3,))
         self.control = np.zeros((3,))
         self.motor = np.zeros((8,))
@@ -39,6 +43,9 @@ class LOG_Wrapper():
         
         # motor
         rospy.Subscriber("/mavros/actuator_control", ActuatorControl, self.motor_callback, queue_size= 10)
+        
+        # ref_att
+        rospy.Subscriber("/test_reference", Odometry, self.ref_callback, queue_size= 10)
         
         rospy.spin()
     
@@ -60,7 +67,14 @@ class LOG_Wrapper():
         self.euler = [roll, pitch, yaw]
 
         # rospy.loginfo("att: %f, %f, %f, %f", self.att[0], self.att[1], self.att[2], self.att[3])
+    
+    def ref_callback(self, msg):
         
+        self.att_ref = [msg.pose.pose.orientation.w, msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z]
+        (roll_ref, pitch_ref, yaw_ref) = tf.transformations.euler_from_quaternion([msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z, msg.pose.pose.orientation.w]) 
+        self.euler_ref =  [roll_ref, pitch_ref, yaw_ref]
+        
+        rospy.loginfo("att: %f, %f, %f", self.euler_ref[0], self.euler_ref[1], self.euler_ref[2])
     
     def updateControl_callback(self, msg):
 
@@ -70,7 +84,17 @@ class LOG_Wrapper():
             rospy.loginfo("control: %f, %f, %f", self.control[0], self.control[1], self.control[2])
             
             # Log data 
-            new_row_data = {'time':self.update_time,     
+            new_row_data = {'time':self.update_time,
+                            
+                            'ref_qw':self.att_ref[0], 
+                            'ref_qx':self.att_ref[1], 
+                            'ref_qy':self.att_ref[2], 
+                            'ref_qz':self.att_ref[3],
+                            
+                            'ref_phi':self.euler_ref[0],
+                            'ref_theta': self.euler_ref[1],
+                            'ref_psi': self.euler_ref[2],   
+                                
                             'qw':self.att[0], 
                             'qx':self.att[1], 
                             'qy':self.att[2], 
