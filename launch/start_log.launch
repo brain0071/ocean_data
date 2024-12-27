@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+    <node pkg="ocean_data" type="log_data.py" name="log_data" output="screen"></node>    
+</launch>
